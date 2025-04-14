@@ -9,7 +9,7 @@ import subprocess
 import sys
 import os
 
-VERSION = '35.6.1'
+VERSION = '36.4.3'
 TAG = 'jetson_' + VERSION
 FILENAME = 'r' + VERSION + '-gitrepos.json'
 

@@ -18,8 +18,8 @@ let
     versions
     ;
 
-  jetpackVersion = "5.1.5";
-  l4tVersion = "35.6.1";
+  jetpackVersion = "6.2";
+  l4tVersion = "36.4.3";
   cudaMajorMinorPatchVersion = "11.4.298";
   cudaVersion = versions.majorMinor cudaMajorMinorPatchVersion;
 
@@ -39,14 +39,10 @@ in
       {
         # https://developer.nvidia.com/embedded/jetson-linux-archive
         # https://repo.download.nvidia.com/jetson/
-        src = final.fetchurl {
-          url = "https://developer.download.nvidia.com/embedded/L4T/r${versions.major l4tVersion}_Release_v${versions.minor l4tVersion}.${versions.patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
-          hash = "sha256-nqKEd3R7MJXuec3Q4odDJ9SNTUD1FyluWg/SeeptbUE=";
+        src = prev.fetchurl {
+          url = with prev.lib.versions; "https://developer.download.nvidia.com/embedded/L4T/r${major l4tVersion}_Release_v${minor l4tVersion}.${patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
+          hash = "sha256-lJpEBJxM5qjv31cuoIIMh09u5dQco+STW58OONEYc9I=";
         };
-        # We use a more recent version of bzip2 here because we hit this bug
-        # extracting nvidia's archives:
-        # https://bugs.launchpad.net/ubuntu/+source/bzip2/+bug/1834494
-        nativeBuildInputs = [ final.buildPackages.bzip2_1_1 ];
       } ''
       bzip2 -d -c $src | tar xf -
       mv Linux_for_Tegra $out
