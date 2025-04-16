@@ -137,6 +137,8 @@ in
     rtkernel = self.callPackage ./kernel { kernelPatches = [ ]; realtime = true; };
     rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
 
+    devicetree = self.callPackage ./kernel/devicetree.nix { };
+
     nxJetsonBenchmarks = self.callPackage ./pkgs/jetson-benchmarks {
       targetSom = "nx";
     };
