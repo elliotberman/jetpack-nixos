@@ -1,5 +1,6 @@
 { lib
 , stdenv
+, stdenvNoCC
 , buildPackages
 , fetchFromGitHub
 , fetchurl
@@ -45,36 +46,34 @@ let
   ###
 
   # See: https://github.com/NVIDIA/edk2-edkrepo-manifest/blob/main/edk2-nvidia/Platform/NVIDIAPlatformsManifest.xml
-  edk2-src = applyPatches {
-    src = fetchFromGitHub {
-      owner = "NVIDIA";
-      repo = "edk2";
-      rev = "r${l4tVersion}";
-      fetchSubmodules = true;
-      sha256 = "sha256-w+rZq7Wjni62MJds6QmqpLod+zSFZ/qAN7kRDOit+jo=";
-    };
-    patches = [
-      # Fix GCC 14 compile issue.
-      # PR: https://github.com/tianocore/edk2/pull/5781
-      (fetchpatch {
-        url = "https://github.com/NVIDIA/edk2/commit/57a890fd03356350a1b7a2a0064c8118f44e9958.patch";
-        hash = "sha256-on+yJOlH9B2cD1CS9b8Pmg99pzrlrZT6/n4qPHAbDcA=";
-      })
-    ];
-  };
+  edk2-src = (fetchFromGitHub {
+    owner = "NVIDIA";
+    repo = "edk2";
+    rev = "r${l4tVersion}";
+    fetchSubmodules = true;
+    sha256 = "sha256-TBroMmFyZt6ypooDtSzScjA3POPr76rJKfLQfAkRwdU=";
+  }).overrideAttrs
+    # see https://github.com/NixOS/nixpkgs/pull/354193
+    (_: {
+      env = {
+        GIT_CONFIG_COUNT = 1;
+        GIT_CONFIG_KEY_0 = "url.https://github.com/tianocore/edk2-subhook.git.insteadOf";
+        GIT_CONFIG_VALUE_0 = "https://github.com/Zeex/subhook.git";
+      };
+    });
 
   edk2-platforms = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "edk2-platforms";
     rev = "r${l4tVersion}";
-    sha256 = "sha256-PjAJEbbswOLYupMg/xEqkAOJuAC8SxNsQlb9YBswRfo=";
+    sha256 = "sha256-27dKEi66UWBgJi3Sb2/naeeSC2CJ5+Dbtw8e0o5Y/Hg=";
   };
 
   edk2-non-osi = fetchFromGitHub {
     owner = "NVIDIA";
     repo = "edk2-non-osi";
     rev = "r${l4tVersion}";
-    sha256 = "sha256-EPtI63jYhEIo4uVTH3lUt9NC/lK5vPVacUAc5qgmz9M=";
+    sha256 = "sha256-FnznH8KsB3rD7sL5Lx2GuQZRPZ+uqAYqenjk+7x89mE=";
   };
 
   edk2-nvidia = applyPatches {
@@ -82,7 +81,7 @@ let
       owner = "NVIDIA";
       repo = "edk2-nvidia";
       rev = "r${l4tVersion}";
-      sha256 = "sha256-0Ef+yybdORI9NPWPR+tKwgmRil+I9QQQ16F747w/E6s=";
+      sha256 = "sha256-Ri+0vrxvd7eE7TP/KBM0ET2jX0fupdC3+Dli+IshUP8=";
     };
     patches = edk2NvidiaPatches ++ [
       # Fix Eqos driver to use correct TX clock name
@@ -92,12 +91,12 @@ let
         hash = "sha256-cc+eGLFHZ6JQQix1VWe/UOkGunAzPb8jM9SXa9ScIn8=";
       })
 
-      ./capsule-authentication.patch
+      # ./capsule-authentication.patch
 
       # Have UEFI use the device tree compiled into the firmware, instead of
       # using one from the kernel-dtb partition.
       # See: https://github.com/anduril/jetpack-nixos/pull/18
-      ./edk2-uefi-dtb.patch
+      # ./edk2-uefi-dtb.patch
     ];
     postPatch = lib.optionalString errorLevelInfo ''
       sed -i 's#PcdDebugPrintErrorLevel|.*#PcdDebugPrintErrorLevel|0x8000004F#' Platform/NVIDIA/NVIDIA.common.dsc.inc
@@ -112,7 +111,7 @@ let
     owner = "NVIDIA";
     repo = "edk2-nvidia-non-osi";
     rev = "r${l4tVersion}";
-    sha256 = "sha256-l2rEbBvlXhlXFUyubsmPlWofqjJuDM/t9EqFwFoSdfk=";
+    sha256 = "sha256-qQs1jO/h6+j9WLfz1OtYpgZutEeX284BlcUKJWvghEE=";
   };
 
   edk2-jetson = edk2.overrideAttrs (prev: {
@@ -152,6 +151,13 @@ let
 
   buildTarget = if debugMode then "DEBUG" else "RELEASE";
 
+  # edk2 can't pick up the config.dsc.inc if it's directly in the path as it'll
+  # have the checksum in front. Copy it into a directory.
+  config-dsc = runCommand "config.dsc.inc-path" { } ''
+    mkdir $out
+    cp ${./config.dsc.inc} $out/config.dsc.inc
+  '';
+
   jetson-edk2-uefi =
     # TODO: edk2.mkDerivation doesn't have a way to override the edk version used!
     # Make it not via passthru ?
@@ -168,9 +174,6 @@ let
 
       NIX_CFLAGS_COMPILE = [
         "-Wno-error=format-security" # TODO: Fix underlying issue
-
-        # Workaround for ../Silicon/NVIDIA/Drivers/EqosDeviceDxe/nvethernetrm/osi/core/osi_hal.c:1428: undefined reference to `__aarch64_ldadd4_sync'
-        "-mno-outline-atomics"
       ];
 
       ${"GCC5_${targetArch}_PREFIX"} = stdenv.cc.targetPrefix;
@@ -184,6 +187,8 @@ let
         edk2-nvidia
         edk2-nvidia-non-osi
         "${edk2-platforms}/Features/Intel/OutOfBandManagement"
+        # TODO: Autogenerate below; it's done by nv extensions to stuart today
+        config-dsc
       ];
 
       enableParallelBuilding = true;
@@ -216,9 +221,12 @@ let
 
         # The BUILDID_STRING and BUILD_DATE_TIME are used
         # just by nvidia, not generic edk2
-        build -a ${targetArch} -b ${buildTarget} -t ${buildType} -p Platform/NVIDIA/Jetson/Jetson.dsc -n $NIX_BUILD_CORES \
+        build -a ${targetArch} -b ${buildTarget} -t ${buildType} -p Platform/NVIDIA/NVIDIA.common.dsc -n $NIX_BUILD_CORES \
           -D BUILDID_STRING=${l4tVersion} \
           -D BUILD_DATE_TIME="$(date --utc --iso-8601=seconds --date=@$SOURCE_DATE_EPOCH)" \
+          -D BUILD_GUID="49a79a15-8f69-4be7-a30c-a172f44abce7" \
+          -D BUILD_NAME="Jetson" \
+          -D BUILD_PROJECT_TYPE="EDK2" \
           ${lib.optionalString (trustedPublicCertPemFile != null) "-D CUSTOM_CAPSULE_CERT"} \
           $buildFlags
 
@@ -235,24 +243,25 @@ let
   uefi-firmware = runCommand "uefi-firmware-${l4tVersion}"
     {
       nativeBuildInputs = [ python3 nukeReferences ];
-    } ''
-    mkdir -p $out
-    python3 ${edk2-nvidia}/Silicon/NVIDIA/Tools/FormatUefiBinary.py \
-      ${jetson-edk2-uefi}/FV/UEFI_NS.Fv \
-      $out/uefi_jetson.bin
+    }
+    ''
+      mkdir -p $out
+      python3 ${edk2-nvidia}/Silicon/NVIDIA/edk2nv/FormatUefiBinary.py \
+        ${jetson-edk2-uefi}/FV/UEFI_NS.Fv \
+        $out/uefi_jetson.bin
 
-    python3 ${edk2-nvidia}/Silicon/NVIDIA/Tools/FormatUefiBinary.py \
-      ${jetson-edk2-uefi}/AARCH64/L4TLauncher.efi \
-      $out/L4TLauncher.efi
+      python3 ${edk2-nvidia}/Silicon/NVIDIA/edk2nv/FormatUefiBinary.py \
+        ${jetson-edk2-uefi}/AARCH64/L4TLauncher.efi \
+        $out/L4TLauncher.efi
 
-    mkdir -p $out/dtbs
-    for filename in ${jetson-edk2-uefi}/AARCH64/Silicon/NVIDIA/Tegra/DeviceTree/DeviceTree/OUTPUT/*.dtb; do
-      cp $filename $out/dtbs/$(basename "$filename" ".dtb").dtbo
-    done
+      mkdir -p $out/dtbs
+      for filename in ${jetson-edk2-uefi}/AARCH64/Silicon/NVIDIA/Tegra/DeviceTree/DeviceTree/OUTPUT/*.dtb; do
+        cp $filename $out/dtbs/$(basename "$filename" ".dtb").dtbo
+      done
 
-    # Get rid of any string references to source(s)
-    nuke-refs $out/uefi_jetson.bin
-  '';
+      # Get rid of any string references to source(s)
+      nuke-refs $out/uefi_jetson.bin
+    '';
 in
 {
   inherit edk2-jetson uefi-firmware;
