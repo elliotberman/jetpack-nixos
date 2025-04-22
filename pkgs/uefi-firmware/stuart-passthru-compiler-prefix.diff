@@ -1,0 +1,13 @@
+diff --git a/Silicon/NVIDIA/edk2nv/stuart/settings.py b/Silicon/NVIDIA/edk2nv/stuart/settings.py
+index cde6b062..61f576e8 100644
+--- a/Silicon/NVIDIA/edk2nv/stuart/settings.py
++++ b/Silicon/NVIDIA/edk2nv/stuart/settings.py
+@@ -338,7 +338,7 @@ class NVIDIASettingsManager(AbstractNVIDIASettingsManager,
+         if prefix:
+             # Use pathlib to normalize it, but stuart requires it
+             # to be a string, not a PathLike.
+-            return str(Path(os.getenv("CROSS_COMPILER_PREFIX")))
++            return prefix
+         else:
+             raise AttributeError("CROSS_COMPILER_PREFIX not defined")
+ 
