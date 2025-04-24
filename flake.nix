@@ -100,7 +100,8 @@
           # Flashing and board automation scripts _only_ work on x86_64-linux
           // flashScripts
           // initrdFlashScripts
-          // uefiCapsuleUpdates;
+          // uefiCapsuleUpdates
+          // supportedNixOSConfigurations;
 
         aarch64-linux = {
           iso_minimal = self.nixosConfigurations.installer_minimal.config.system.build.isoImage;

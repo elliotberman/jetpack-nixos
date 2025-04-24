@@ -1,13 +1,18 @@
-diff --git a/Silicon/NVIDIA/edk2nv/stuart/settings.py b/Silicon/NVIDIA/edk2nv/stuart/settings.py
-index cde6b062..61f576e8 100644
---- a/Silicon/NVIDIA/edk2nv/stuart/settings.py
-+++ b/Silicon/NVIDIA/edk2nv/stuart/settings.py
-@@ -338,7 +338,7 @@ class NVIDIASettingsManager(AbstractNVIDIASettingsManager,
-         if prefix:
-             # Use pathlib to normalize it, but stuart requires it
-             # to be a string, not a PathLike.
--            return str(Path(os.getenv("CROSS_COMPILER_PREFIX")))
-+            return prefix
-         else:
-             raise AttributeError("CROSS_COMPILER_PREFIX not defined")
- 
+diff --git a/Silicon/NVIDIA/edk2nv/stuart/builder.py b/Silicon/NVIDIA/edk2nv/stuart/builder.py
+index 692400d2..31cef6ae 100644
+--- a/Silicon/NVIDIA/edk2nv/stuart/builder.py
++++ b/Silicon/NVIDIA/edk2nv/stuart/builder.py
+@@ -340,13 +340,6 @@ class NVIDIAPlatformBuilder(UefiBuilder):
+                           str(ws_dir / self.settings.GetReportFile()),
+                           reason_setman)
+
+-        # Set shell env
+-        shell_environment.GetEnvironment().set_shell_var(
+-            f"{toolchain_tag}_AARCH64_PREFIX",
+-            self.settings.GetCrossCompilerPrefix())
+-        shell_environment.GetEnvironment().set_shell_var(
+-            f"DTCPP_PREFIX",
+-            self.settings.GetCrossCompilerPrefix())
+         # - Needed by build.py.
+         confdir_path = ws_dir / self.settings.GetConfDirName()
+         shell_environment.GetEnvironment().set_shell_var(
