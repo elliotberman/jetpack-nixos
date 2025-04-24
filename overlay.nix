@@ -128,14 +128,14 @@ in
     tests = final.callPackages ./pkgs/tests { inherit l4tVersion; };
 
     kernelPackagesOverlay = final: _: {
-      nvidia-display-driver = final.callPackage ./kernel/display-driver.nix { inherit (self) gitRepos l4tVersion; };
+      # nvidia-display-driver = final.callPackage ./kernel/display-driver.nix { inherit (self) gitRepos l4tVersion; };
     };
 
     kernel = self.callPackage ./kernel { kernelPatches = [ ]; };
-    kernelPackages = (final.linuxPackagesFor self.kernel).extend self.kernelPackagesOverlay;
+    kernelPackages = (final.linuxPackagesFor self.kernel); #.extend self.kernelPackagesOverlay;
 
     rtkernel = self.callPackage ./kernel { kernelPatches = [ ]; realtime = true; };
-    rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
+    # rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
 
     devicetree = self.callPackage ./kernel/devicetree.nix { };
 

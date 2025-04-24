@@ -26,6 +26,12 @@ buildLinux (args // {
 
   defconfig = "tegra_prod_defconfig";
 
+  # TODO: how to get Nix not to inject h/w specific configs?
+  # Nix injects some board-specific configs. Those configs depend on things that
+  # qcom_defconfig have disabled and so we get config errors. One solution is to
+  # enable the dependent configs, but why have things enabled we don't need?
+  ignoreConfigErrors = true;
+
   # disabling the dependency on the common-config would seem appropriate as we define our own defconfig
   # however, it seems that some of the settings for e.g. fw loading are only made available there.
   # TODO: a future task could be to set this, disable ignoreConfigErrors and add the needed modules to the
