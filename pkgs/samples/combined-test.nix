@@ -35,7 +35,7 @@ writeShellApplication {
     ${multimedia-test}/bin/multimedia-test
 
     echo "====="
-    echo "Running VPI2 test"
+    echo "Running vpi2 test"
     echo "====="
     ${vpi2-test}/bin/vpi2-test
   '';

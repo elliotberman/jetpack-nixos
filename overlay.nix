@@ -39,8 +39,8 @@ in
       {
         # https://developer.nvidia.com/embedded/jetson-linux-archive
         # https://repo.download.nvidia.com/jetson/
-        src = prev.fetchurl {
-          url = with prev.lib.versions; "https://developer.download.nvidia.com/embedded/L4T/r${major l4tVersion}_Release_v${minor l4tVersion}.${patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
+        src = final.fetchurl {
+          url = with final.lib.versions; "https://developer.download.nvidia.com/embedded/L4T/r${major l4tVersion}_Release_v${minor l4tVersion}.${patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
           hash = "sha256-lJpEBJxM5qjv31cuoIIMh09u5dQco+STW58OONEYc9I=";
         };
       } ''
