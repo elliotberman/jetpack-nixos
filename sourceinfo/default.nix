@@ -15,6 +15,7 @@ let
   gitRepos = lib.mapAttrs
     (relpath: info: fetchgit {
       inherit (info) url rev hash;
+      name = relpath;
     })
     gitJSON;
 in
