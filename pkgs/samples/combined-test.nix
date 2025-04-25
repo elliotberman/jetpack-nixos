@@ -3,7 +3,7 @@
 , cupti-test
 , libnvinfer-test
 , multimedia-test
-, vpi2-test
+, vpi3-test
 , writeShellApplication
 }:
 writeShellApplication {
@@ -35,8 +35,8 @@ writeShellApplication {
     ${multimedia-test}/bin/multimedia-test
 
     echo "====="
-    echo "Running vpi2 test"
+    echo "Running vpi3 test"
     echo "====="
-    ${vpi2-test}/bin/vpi2-test
+    ${vpi3-test}/bin/vpi3-test
   '';
 }

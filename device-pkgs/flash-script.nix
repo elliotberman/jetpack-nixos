@@ -43,7 +43,7 @@
   export ADDITIONAL_DTB_OVERLAY=''${ADDITIONAL_DTB_OVERLAY:+$ADDITIONAL_DTB_OVERLAY,}${lib.concatStringsSep "," additionalDtbOverlays}
 
   ${lib.optionalString (partitionTemplate != null) "cp ${partitionTemplate} flash.xml"}
-  # ${lib.optionalString (dtbsDir != null) "cp -r ${dtbsDir}/. kernel/dtb/"}
+  ${lib.optionalString (dtbsDir != null) "cp -r ${dtbsDir}/. kernel/dtb/"}
   ${lib.optionalString (uefi-firmware != null) ''
   cp ${uefi-firmware}/uefi_jetson.bin bootloader/uefi_jetson.bin
 
@@ -52,7 +52,7 @@
   cp ${uefi-firmware}/L4TLauncher.efi bootloader/BOOTAA64.efi
 
   # Replace additional dtbos
-  # cp ${uefi-firmware}/dtbs/*.dtbo kernel/dtb/
+  cp ${uefi-firmware}/dtbs/*.dtbo kernel/dtb/
   ''}
   ${lib.optionalString (tosImage != null) ''
   # cp ${tosImage}/tos.img bootloader/tos-optee_${socType}.img

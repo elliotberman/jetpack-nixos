@@ -9,13 +9,13 @@
 ,
 }:
 buildFromDebs {
-  pname = "vpi2";
-  version = debs.common.vpi2-dev.version;
+  pname = "vpi3";
+  version = debs.common.vpi3-dev.version;
   srcs = [
-    debs.common.libnvvpi2.src
-    debs.common.vpi2-dev.src
+    debs.common.libnvvpi3.src
+    debs.common.vpi3-dev.src
   ];
-  sourceRoot = "source/opt/nvidia/vpi2";
+  sourceRoot = "source/opt/nvidia/vpi3";
   buildInputs = [
     l4t-core
     l4t-3d-core
@@ -24,7 +24,7 @@ buildFromDebs {
     libcufft
     libnpp
   ];
-  patches = [ ./vpi2.patch ];
+  patches = [ ./vpi3.patch ];
   postPatch = ''
     rm -rf etc
     substituteInPlace lib/cmake/vpi/vpi-config.cmake --subst-var out
