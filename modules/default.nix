@@ -228,8 +228,11 @@ in
     boot.initrd.includeDefaultModules = false; # Avoid a bunch of modules we may not get from tegra_defconfig
     boot.initrd.availableKernelModules = [
       # Make sure USB driver stack makes it into initrd
+      "phy-tegra-xusb"
+      "tegra_mce"
       "xhci-tegra"
       # for type-c connector
+      "i2c-tegra"
       "fusb301"
       "typec_ucsi"
       "ucsi_ccg"
