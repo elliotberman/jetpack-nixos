@@ -41,10 +41,15 @@ buildLinux (args // {
   # Using applyPatches here since it's not obvious how to append an extra
   # postPatch. This is not very efficient.
   src = if useOe4tKernelSrc then oe4tKernelSrc else gitRepos."kernel/kernel-jammy-src";
-  autoModules = false;
+  autoModules = true;
   features = { }; # TODO: Why is this needed in nixpkgs master (but not NixOS 22.05)?
 
-  inherit kernelPatches;
+  kernelPatches = [
+    {
+      name = "ipu: Depend on x86";
+      patch = ./0001-ipu-Depend-on-x86.patch;
+    }
+  ] ++ kernelPatches;
 
   structuredExtraConfig = with lib.kernel; {
     # stage-1 links /lib/firmware to the /nix/store path in the initramfs.
@@ -69,6 +74,7 @@ buildLinux (args // {
     NFT_COMPAT = module;
     NFT_LOG = module;
     NFT_COUNTER = module;
+
     # IPv6 is enabled by default and without some of these `firewall.service` will explode.
     IP6_NF_MATCH_AH = module;
     IP6_NF_MATCH_EUI64 = module;
@@ -91,6 +97,9 @@ buildLinux (args // {
 
     # Needed for booting from USB
     USB_UAS = module;
+
+    FW_LOADER_COMPRESS_XZ = yes;
+    FW_LOADER_COMPRESS_ZSTD = yes;
   } // (lib.optionalAttrs realtime {
     PREEMPT_VOLUNTARY = lib.mkForce no; # Disable the one set in common-config.nix
     # These are the options enabled/disabled by scripts/rt-patch.sh
