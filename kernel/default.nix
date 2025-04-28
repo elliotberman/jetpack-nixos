@@ -20,11 +20,11 @@ let
   };
 in
 buildLinux (args // {
-  # See Makefile in kernel source root for VERSION/PATCHLEVEL/SUBLEVEL. See realtime patch for rt version
-  version = "5.15.148-prod" + lib.optionalString realtime "-rt108";
+  # See Makefile in kernel source root for VERSION/PATCHLEVEL/SUBLEVEL.
+  version = "5.15.148";
   extraMeta.branch = "5.15";
 
-  defconfig = "tegra_prod_defconfig";
+  defconfig = "defconfig";
 
   # TODO: how to get Nix not to inject h/w specific configs?
   # Nix injects some board-specific configs. Those configs depend on things that
@@ -91,9 +91,6 @@ buildLinux (args // {
 
     # Needed for booting from USB
     USB_UAS = module;
-    # Also needed for booting from USB, but don't know why tegra_prod_defconfig doesn't have these enabled...
-    TYPEC_UCSI = module;
-    UCSI_CCG = module;
   } // (lib.optionalAttrs realtime {
     PREEMPT_VOLUNTARY = lib.mkForce no; # Disable the one set in common-config.nix
     # These are the options enabled/disabled by scripts/rt-patch.sh
