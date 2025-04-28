@@ -33,7 +33,13 @@ let
       ];
     })
     gitRepos.nvgpu
-    gitRepos.nvdisplay
+    (applyPatches {
+      name = "nvdisplay";
+      src = gitRepos.nvdisplay;
+      patches = [
+        ./0001-nvidia-drm-Guard-nv_dev-in-nv_drm_suspend_resume.patch
+      ];
+    })
     (applyPatches {
       name = "nvethernetrm";
       src = gitRepos.nvethernetrm;

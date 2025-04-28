@@ -88,6 +88,12 @@ buildLinux (args // {
     MD_RAID1 = module;
     MD_RAID10 = module;
     MD_RAID456 = module;
+
+    # Needed for booting from USB
+    USB_UAS = module;
+    # Also needed for booting from USB, but don't know why tegra_prod_defconfig doesn't have these enabled...
+    TYPEC_UCSI = module;
+    UCSI_CCG = module;
   } // (lib.optionalAttrs realtime {
     PREEMPT_VOLUNTARY = lib.mkForce no; # Disable the one set in common-config.nix
     # These are the options enabled/disabled by scripts/rt-patch.sh
