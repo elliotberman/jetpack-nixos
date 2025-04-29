@@ -20,8 +20,9 @@ let
 
   jetpackVersion = "6.2";
   l4tVersion = "36.4.3";
-  cudaMajorMinorPatchVersion = "11.4.298";
+  cudaMajorMinorPatchVersion = "12.6.10";
   cudaVersion = versions.majorMinor cudaMajorMinorPatchVersion;
+  cudaDriverVersion = "540.4.0";
 
   sourceInfo = import ./sourceinfo {
     inherit l4tVersion;
@@ -31,7 +32,7 @@ in
 {
   nvidia-jetpack = makeScope final.newScope (self: {
     inherit (sourceInfo) debs gitRepos;
-    inherit jetpackVersion l4tVersion cudaVersion;
+    inherit jetpackVersion l4tVersion cudaVersion cudaDriverVersion;
 
     callPackages = callPackagesWith (final // self);
 
@@ -135,7 +136,7 @@ in
     kernelPackages = (final.linuxPackagesFor self.kernel).extend self.kernelPackagesOverlay;
 
     rtkernel = self.callPackage ./kernel { kernelPatches = [ ]; realtime = true; };
-    # rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
+    rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
 
     devicetree = self.callPackage ./kernel/devicetree.nix { };
 
@@ -168,6 +169,6 @@ in
   # attribute set, we cannot use self.callPackages because we would end up with infinite recursion.
   # Instead, we must either use final.callPackages or packagesFromDirectoryRecursive.
   // final.callPackages ./pkgs/l4t {
-    inherit (self) debs l4tVersion;
+    inherit (self) debs l4tVersion cudaDriverVersion;
   });
 }

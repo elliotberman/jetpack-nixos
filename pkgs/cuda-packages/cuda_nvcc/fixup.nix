@@ -1,18 +1,21 @@
-# NOTE: All fixups must be at least binary functions to avoid callPackage adding override attributes.
-{ backendStdenv
-, cudaAtLeast
-, cudaConfig
-, cudaMajorMinorPatchVersion
-, cudaMajorMinorVersion
+{ cudaAtLeast
 , cudaOlder
+, backendStdenv
 , lib
-, makeBinaryWrapper
-, setupCudaHook
+  # , nvccHook
+,
 }:
-let
-  inherit (lib.strings) concatStringsSep optionalString;
-in
+let cudaStdenv = backendStdenv; in
 finalAttrs: prevAttrs: {
+  # The nvcc and cicc binaries contain hard-coded references to /usr
+  allowFHSReferences = true;
+
+  # Entries here will be in nativeBuildInputs when cuda_nvcc is in nativeBuildInputs
+  propagatedBuildInputs = prevAttrs.propagatedBuildInputs or [ ] ++ [
+    # nvccHook
+    cudaStdenv.cc
+  ];
+
   # Patch the nvcc.profile.
   # Syntax:
   # - `=` for assignment,
@@ -62,23 +65,13 @@ finalAttrs: prevAttrs: {
   # CUDAFE_FLAGS    +=
   # PTXAS_FLAGS     +=
 
-  # NOTE(@connorbaker):
-  # While the postInstall phase is fairly gnarly and repetitive, it's necessary to ensure we're able to add
-  # dependencies to *specific* outputs generated as by the multiple-output setup hook. Barring this method of
-  # manipulating the files in `nix-support` in the respective outputs, I'm not sure there is a way to do per-output
-  # manipulation of dependencies. If there is, I'd love to hear about it!
   postInstall =
     prevAttrs.postInstall or ""
-    + optionalString finalAttrs.finalPackage.meta.available (
+    + lib.optionalString finalAttrs.finalPackage.meta.available (
       # Always move the nvvm directory to the bin output.
       ''
         moveToOutput "nvvm" "''${!outputBin:?}"
-        echo "moving nvvm/lib64 to nvvm/lib"
-        mv "''${!outputBin:?}/nvvm/lib64" "''${!outputBin:?}/nvvm/lib"
-      ''
-      # Create a directory for our manual propagation.
-      + ''
-        mkdir -p "''${!outputBin:?}/nix-support"
+        mv --verbose --no-clobber "''${!outputBin:?}/nvvm/lib64" "''${!outputBin:?}/nvvm/lib"
       ''
       # Unconditional patching to remove the use of $(_TARGET_SIZE_) since we don't use lib64 in Nixpkgs
       + ''
@@ -97,16 +90,15 @@ finalAttrs: prevAttrs: {
             '$(TOP)/$(_TARGET_DIR_)/include' \
             "''${!outputInclude:?}/include"
       ''
-      # Add the dependency on the include output to the nvcc.profile.
-      + ''
-        echo "adding ''${!outputInclude:?} to propagatedBuildInputs of ''${!outputBin:?}"
-        printWords "''${!outputInclude:?}" >> "''${!outputBin:?}/nix-support/native-propagated-build-inputs"
-      ''
       # Fixup the nvcc.profile to use the correct paths for the backend compiler and NVVM.
       + (
         let
           # TODO: Should we also patch the LIBRARIES line's use of $(TOP)/$(_TARGET_DIR_)?
-          oldNvvmDir = concatStringsSep "/" [ "$(TOP)" "$(_NVVM_BRANCH_)" ];
+          oldNvvmDir = lib.concatStringsSep "/" (
+            [ "$(TOP)" ]
+            ++ lib.optionals (cudaOlder "12.5") [ "$(_NVVM_BRANCH_)" ]
+            ++ lib.optionals (cudaAtLeast "12.5") [ "nvvm" ]
+          );
           newNvvmDir = ''''${!outputBin:?}/nvvm'';
         in
         # Unconditional patching to switch to the correct NVVM paths.
@@ -119,14 +111,14 @@ finalAttrs: prevAttrs: {
               '${oldNvvmDir}/' \
               "${newNvvmDir}/"
         ''
-        # Add the dependency on backendStdenv.cc and the new NVVM directories to the nvcc.profile.
+        # Add the dependency on cudaStdenv.cc and the new NVVM directories to the nvcc.profile.
         # NOTE: Escape the dollar sign in the variable expansion to prevent early expansion.
         + ''
-          echo "adding backendStdenv.cc and ${newNvvmDir} to nvcc.profile"
+          echo "adding cudaStdenv.cc and ${newNvvmDir} to nvcc.profile"
           cat << EOF >> "''${!outputBin:?}/bin/nvcc.profile"
 
           # Fix a compatible backend compiler
-          PATH += "${backendStdenv.cc}/bin":
+          PATH += "${cudaStdenv.cc}/bin":
 
           # Expose the split-out nvvm
           LIBRARIES =+ \$(_SPACE_) "-L${newNvvmDir}/lib"
@@ -135,24 +127,6 @@ finalAttrs: prevAttrs: {
         ''
       )
     );
-
-  # Add setupCudaHook to the propagatedBuildInputs of the bin output (so it will be in nativeBuildInputs when nvcc is).
-  # NOTE: mkDerivation's setup.sh clobbers all dependency files in fixupPhase, so we must register the paths in postFixup.
-  postFixup =
-    prevAttrs.postFixup or ""
-    + ''
-      echo "adding setupCudaHook to propagatedBuildInputs of ''${!outputBin:?}"
-      printWords "${setupCudaHook}" >> "''${!outputBin:?}/nix-support/propagated-build-inputs"
-    ''
-    # Add the dependency on backendStdenv.cc to the nvcc.profile and native-propagated-build-inputs.
-    # NOTE: No need to add a dependency on `newNvvmDir` since it's already in the bin output.
-    + ''
-      echo "adding backendStdenv.cc to propagatedNativeBuildInputs of ''${!outputBin:?}"
-      printWords "${backendStdenv.cc}" >> "''${!outputBin:?}/nix-support/propagated-native-build-inputs"
-    '';
-
-  # The nvcc and cicc binaries contain hard-coded references to /usr
-  allowFHSReferences = true;
 
   meta = prevAttrs.meta or { } // {
     mainProgram = "nvcc";

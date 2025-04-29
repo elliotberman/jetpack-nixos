@@ -23,6 +23,7 @@
 , tree
 , l4tVersion
 , cudaPackages
+, cudaDriverVersion
 }:
 let
   # The version currently in nixpkgs 23.11 and master 0.15 is pretty old and
@@ -121,18 +122,20 @@ let
     postPatch = ''
       # Replace incorrect ICD symlinks
       rm -rf etc
-      mkdir -p share/vulkan/icd.d
-      mv lib/nvidia_icd.json share/vulkan/icd.d/nvidia_icd.json
+      # mkdir -p share/vulkan/icd.d
+      # mv lib/nvidia/nvidia_icd.json share/vulkan/icd.d/nvidia_icd.json
       # Use absolute path in ICD json
-      sed -i -E "s#(libGLX_nvidia)#$out/lib/\\1#" share/vulkan/icd.d/nvidia_icd.json
+      # sed -i -E "s#(libGLX_nvidia)#$out/lib/\\1#" share/vulkan/icd.d/nvidia_icd.json
 
       rm -f share/glvnd/egl_vendor.d/10_nvidia.json
       cp lib/tegra-egl/nvidia.json share/glvnd/egl_vendor.d/10_nvidia.json
       sed -i -E "s#(libEGL_nvidia)#$out/lib/\\1#" share/glvnd/egl_vendor.d/10_nvidia.json
 
-      mv lib/tegra-egl/* lib
-      rm -rf lib/tegra-egl
-      rm -f lib/nvidia.json
+      mv -v lib/nvidia/* lib/
+      rm -r lib/nvidia
+      mv -v lib/tegra-egl/* lib/
+      rm -r lib/tegra-egl
+      rm lib/nvidia.json
 
       # Remove libnvidia-ptxjitcompiler, which is included in l4t-cuda instead
       rm -f lib/libnvidia-ptxjitcompiler.*
@@ -164,10 +167,11 @@ let
     # TODO: Replace this with appendRunpaths which is available in 23.11
     preFixup = ''
       postFixupHooks+=('
-        patchelf --add-rpath ${lib.makeLibraryPath [ libglvnd ]} \
-          $out/lib/libEGL_nvidia.so.0 \
-          $out/lib/libGLX_nvidia.so.0 \
-          $out/lib/libnvidia-vulkan-producer.so
+        # ${lib.getExe tree} $out
+        # patchelf --add-rpath ${lib.makeLibraryPath [ libglvnd ]} \
+        #   $out/lib/libEGL_nvidia.so.0 \
+        #   $out/lib/libGLX_nvidia.so.0 \
+        #   $out/lib/libnvidia-vulkan-producer.so
 
         patchelf --add-rpath ${lib.makeLibraryPath (with xorg; [ libX11 libXext libxcb ])} \
           $out/lib/libGLX_nvidia.so.0 \
@@ -187,6 +191,8 @@ let
 
     postPatch =
       ''
+        mv -v lib/nvidia/* lib/
+        rm -r lib/nvidia
         # Additional libcuda symlinks
         ln -sf libcuda.so.1.1 lib/libcuda.so.1
         ln -sf libcuda.so.1.1 lib/libcuda.so
@@ -199,9 +205,9 @@ let
         # well as libnvidia-ptxjitcompiler in the same package. meta-tegra does a
         # similar thing where they pull libnvidia-ptxjitcompiler out of
         # l4t-3d-core and place it in the same package as libcuda.
-        dpkg --fsys-tarfile ${debs.t234.nvidia-l4t-3d-core.src} | tar -xO ./usr/lib/aarch64-linux-gnu/tegra/libnvidia-ptxjitcompiler.so.${l4tVersion} > lib/libnvidia-ptxjitcompiler.so.${l4tVersion}
-        ln -sf libnvidia-ptxjitcompiler.so.${l4tVersion} lib/libnvidia-ptxjitcompiler.so.1
-        ln -sf libnvidia-ptxjitcompiler.so.${l4tVersion} lib/libnvidia-ptxjitcompiler.so
+        dpkg --fsys-tarfile ${debs.t234.nvidia-l4t-3d-core.src} | tar -xO ./usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ptxjitcompiler.so.${cudaDriverVersion} > lib/libnvidia-ptxjitcompiler.so.${cudaDriverVersion}
+        ln -sf libnvidia-ptxjitcompiler.so.${cudaDriverVersion} lib/libnvidia-ptxjitcompiler.so.1
+        ln -sf libnvidia-ptxjitcompiler.so.${cudaDriverVersion} lib/libnvidia-ptxjitcompiler.so
       '';
 
     # libcuda.so actually depends on libnvcucompat.so at runtime (probably

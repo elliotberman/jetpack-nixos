@@ -58,7 +58,7 @@
   # cp ${tosImage}/tos.img bootloader/tos-optee_${socType}.img
   ''}
   ${lib.optionalString (eksFile != null) ''
-  # cp ${eksFile} bootloader/eks_${socType}.img
+  cp ${eksFile} bootloader/eks_${socType}.img
   ''}
 
   ${preFlashCommands}
