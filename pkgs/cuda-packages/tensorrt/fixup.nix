@@ -6,7 +6,7 @@
 , flags
 , libcublas
 , libcudla
-, pkgs
+, l4t-dla-compiler
 , patchelf
 }:
 prevAttrs: {
@@ -21,7 +21,7 @@ prevAttrs: {
     cudnn
     libcublas
     libcudla
-    pkgs.nvidia-jetpack.l4t-dla-compiler
+    l4t-dla-compiler
   ];
 
   debNormalization =
