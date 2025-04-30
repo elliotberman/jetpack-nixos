@@ -15,23 +15,6 @@ prevAttrs: {
     zlib
   ];
 
-  postFixup =
-    prevAttrs.postFixup or ""
-    + ''
-      echo "patchelf-ing libcudnn with runtime dependencies"
-      "${getExe patchelf}" "''${!outputLib:?}/lib/libcudnn.so" --add-needed libcudnn_cnn_infer.so
-      "${getExe patchelf}" "''${!outputLib:?}/lib/libcudnn_ops_infer.so" --add-needed libcublas.so --add-needed libcublasLt.so
-
-      echo "creating symlinks for header files in include without the _v8 suffix before the file extension"
-      pushd "''${!outputInclude:?}/include" >/dev/null
-      for file in *.h; do
-        echo "symlinking $file to $(basename "$file" "_v8.h").h"
-        ln -s "$file" "$(basename "$file" "_v8.h").h"
-      done
-      unset -v file
-      popd >/dev/null
-    '';
-
   meta = prevAttrs.meta or { } // {
     homepage = "https://developer.nvidia.com/cudnn";
     license = {

@@ -182,32 +182,51 @@ in
       }
     ];
 
-    # Use mkOptionDefault so that we prevent conflicting with the priority that
-    # `nixos-generate-config` uses.
-    nixpkgs.hostPlatform = lib.mkOptionDefault "aarch64-linux";
-
     # Use mkBefore to ensure that our overlays get merged prior to any
     # downstream jetpack-nixos users. This should prevent a situation where a
     # user's overlay is merged before ours and that overlay depends on
     # something defined in our overlay.
-    nixpkgs.overlays = lib.mkBefore [
-      (import ../overlay.nix)
-      (import ../overlay-with-config.nix config)
-    ];
+    nixpkgs = lib.mkMerge [
+      {
+        overlays = lib.mkBefore [
+          (import ../overlay.nix)
+          (import ../overlay-with-config.nix config)
+        ];
 
-    # Advertise support for CUDA.
-    nixpkgs.config = mkIf cfg.configureCuda {
-      cudaSupport = lib.mkDefault true;
-      cudaCapabilities =
-        let
-          isGeneric = cfg.som == "generic";
-          isXavier = lib.hasPrefix "xavier-" cfg.som;
-          isOrin = lib.hasPrefix "orin-" cfg.som;
-        in
-        lib.mkDefault
-          (lib.optionals (isXavier || isGeneric) [ "7.2" ]
-            ++ lib.optionals (isOrin || isGeneric) [ "8.7" ]);
-    };
+        # Use mkOptionDefault so that we prevent conflicting with the priority that
+        # `nixos-generate-config` uses.
+        hostPlatform = lib.mkOptionDefault "aarch64-linux";
+
+      }
+      (lib.mkIf cfg.configureCuda {
+        # Advertise support for CUDA.
+        config = {
+          cudaSupport = lib.mkDefault true;
+          cudaCapabilities =
+            let
+              isGeneric = cfg.som == "generic";
+              isXavier = lib.hasPrefix "xavier-" cfg.som;
+              isOrin = lib.hasPrefix "orin-" cfg.som;
+            in
+            lib.mkDefault
+              (lib.optionals (isXavier || isGeneric) [ "7.2" ]
+                ++ lib.optionals (isOrin || isGeneric) [ "8.7" ]);
+        };
+
+        overlays = lib.mkBefore [
+          (final: prev: {
+            # NOTE: samples (and other packages) may pull in dependencies which depend on CUDA (either directly or
+            # transitively) -- this is problematic for us, because the default CUDA package set is not the one we
+            # construct.
+            # To avoid mixed package sets, we make our CUDA package set the default.
+            inherit (final.nvidia-jetpack) cudaPackages;
+            # TODO: Remove after bumping past 24.11: reset OpenCV's override on cudaPackages.
+            # https://github.com/NixOS/nixpkgs/blob/7ffe0edc685f14b8c635e3d6591b0bbb97365e6c/pkgs/top-level/all-packages.nix#L10540-L10541
+            opencv4 = prev.opencv4.override { inherit (final) cudaPackages; };
+          })
+        ];
+      })
+    ];
 
     boot.kernelPackages =
       if cfg.kernel.realtime then

@@ -18,7 +18,7 @@ stdenv.mkDerivation {
   strictDeps = true;
 
   pname = "cudnn-samples";
-  inherit (debs.common.libcudnn8-samples) src version;
+  inherit (debs.common.libcudnn9-samples) src version;
 
   unpackCmd = "dpkg -x $src source";
   sourceRoot = "source/usr/src/cudnn_samples_v8";

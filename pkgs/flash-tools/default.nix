@@ -76,12 +76,14 @@ let
       # Wrap x86 binaries in qemu
       pushd bootloader/ >/dev/null
       for filename in chkbdinfo mkbctpart mkbootimg mksparse tegrabct_v2 tegradevflash_v2 tegrahost_v2 tegrakeyhash tegraopenssl tegraparser_v2 tegrarcm_v2 tegrasign_v2; do
-        mv "$filename" ."$filename"-wrapped
-        cat >"$filename" <<EOF
-      #!${runtimeShell}
-      exec -a "\$0" ${qemu-user}/bin/qemu-i386 "$out/bootloader/.$filename-wrapped" "\$@"
-      EOF
-        chmod +x "$filename"
+        if [ - e "$filename" ]; then
+          mv "$filename" ."$filename"-wrapped
+          cat >"$filename" <<EOF
+            #!${runtimeShell}
+            exec -a "\$0" ${qemu-user}/bin/qemu-i386 "$out/bootloader/.$filename-wrapped" "\$@"
+          EOF
+          chmod +x "$filename"
+        fi
       done
       popd >/dev/null
     '');

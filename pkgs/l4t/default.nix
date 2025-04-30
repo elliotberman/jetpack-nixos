@@ -73,18 +73,29 @@ let
 
       postPatch = ''
         if [[ -d usr ]]; then
-          mv usr/* .
+          mv -v usr/* .
           rmdir usr
         fi
 
         if [[ -d lib/aarch64-linux-gnu ]]; then
-          mv lib/aarch64-linux-gnu/* lib
+          if [[ -n "$(ls lib/aarch64-linux-gnu)" ]] ; then
+            mv -v -t lib lib/aarch64-linux-gnu/*
+          fi
           rm -rf lib/aarch64-linux-gnu
         fi
 
         if [[ -d lib/tegra ]]; then
-          mv lib/tegra/* lib
+          if [[ -n "$(ls lib/tegra)" ]] ; then
+            mv -v -t lib lib/tegra/*
+          fi
           rm -rf lib/tegra
+        fi
+
+        if [[ -d lib/nvidia ]]; then
+          if [[ -n "$(ls lib/nvidia)" ]] ; then
+            mv -v -t lib lib/nvidia/*
+          fi
+          rm -rf lib/nvidia
         fi
 
         ${postPatch}
@@ -131,8 +142,6 @@ let
       cp lib/tegra-egl/nvidia.json share/glvnd/egl_vendor.d/10_nvidia.json
       sed -i -E "s#(libEGL_nvidia)#$out/lib/\\1#" share/glvnd/egl_vendor.d/10_nvidia.json
 
-      mv -v lib/nvidia/* lib/
-      rm -r lib/nvidia
       mv -v lib/tegra-egl/* lib/
       rm -r lib/tegra-egl
       rm lib/nvidia.json
@@ -191,8 +200,6 @@ let
 
     postPatch =
       ''
-        mv -v lib/nvidia/* lib/
-        rm -r lib/nvidia
         # Additional libcuda symlinks
         ln -sf libcuda.so.1.1 lib/libcuda.so.1
         ln -sf libcuda.so.1.1 lib/libcuda.so
@@ -219,12 +226,12 @@ let
 
   l4t-cupva = buildFromDeb {
     name = "cupva";
-    src = debs.common."cupva-2.3-l4t".src;
-    version = debs.common."cupva-2.3-l4t".version;
+    src = debs.common."cupva-2.5-l4t".src;
+    version = debs.common."cupva-2.5-l4t".version;
     buildInputs = [ stdenv.cc.cc.lib l4t-cuda l4t-nvsci l4t-pva ];
     postPatch = ''
       mkdir -p lib
-      mv opt/nvidia/cupva-2.3/lib/aarch64-linux-gnu/* lib/
+      mv opt/nvidia/cupva-2.5/lib/aarch64-linux-gnu/* lib/
       rm -rf opt
     '';
   };
@@ -289,8 +296,8 @@ let
 
     patches = [
       (fetchpatch {
-        url = "https://raw.githubusercontent.com/OE4T/meta-tegra/af0a93313c13e9eac4e80082d8a8e8ac5f7ad6e8/recipes-multimedia/argus/files/0005-Remove-DO-NOT-USE-declarations-from-v4l2_nv_extensio.patch";
-        sha256 = "sha256-meHF7uS2TFMoh0qGCmjGzR8hfhE0cCwSP2T3ufzwM0s=";
+        url = "https://raw.githubusercontent.com/OE4T/meta-tegra/2b51abd5b3e2436f8eeb98e8f985806521379174/recipes-multimedia/argus/files/0001-Remove-DO-NOT-USE-declarations-from-v4l2_nv_extensio.patch";
+        sha256 = "sha256-MvrwedGEuGtORhshGzJ76A9/VPPCyp9Ztrh0x13T+pw=";
         stripLen = 1;
         extraPrefix = "usr/src/jetson_multimedia_api/";
       })
