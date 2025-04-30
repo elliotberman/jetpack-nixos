@@ -244,6 +244,9 @@ let
       # DANGER: If someone else modifies PYTHONPATH, then we lose this
       # We're okay when this was written.
       PYTHONPATH = "${edk2-nvidia}/Silicon/NVIDIA";
+      # Version is ${FIRMWARE_VERSION_BASE}-${GIT_SYNC_REVISION}
+      FIRMWARE_VERSION_BASE = "${l4tVersion}";
+      GIT_SYNC_REVISION = "nix";
 
       # see nixpkgs/pkgs/by-name/ed/edk2/package.nix
       hardeningDisable = [

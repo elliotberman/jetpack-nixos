@@ -6,13 +6,13 @@ let
 in
 buildGoModule rec {
   pname = "nvidia-ctk";
-  version = "1.16.2";
+  version = "1.17.5";
 
   src = fetchFromGitHub {
     owner = "nvidia";
     repo = "nvidia-container-toolkit";
     rev = "v${version}";
-    hash = "sha256-ldEBF+5zuJAyDSUVnMPja2BvdMCNMDkp0Ye5+qFEm14=";
+    hash = "sha256-vEo8agJ3jTaBokBjdGcO2naE457y8KPUAedC8vtwD1Y=";
   };
 
   subPackages = [ "cmd/nvidia-ctk" ];
