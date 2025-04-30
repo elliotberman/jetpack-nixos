@@ -236,6 +236,13 @@ let
     '';
   };
 
+  l4t-dla-compiler = buildFromDeb {
+    name = "nvidia-l4t-dla-compiler";
+    src = debs.common."nvidia-l4t-dla-compiler".src;
+    version = debs.common."nvidia-l4t-dla-compiler".version;
+    buildInputs = [ l4t-cuda ];
+  };
+
   # TODO: Make nvwifibt systemd scripts work
   l4t-firmware = buildFromDeb {
     name = "nvidia-l4t-firmware";
@@ -418,6 +425,7 @@ in
     l4t-core
     l4t-cuda
     l4t-cupva
+    l4t-dla-compiler
     l4t-firmware
     l4t-gbm
     l4t-gstreamer

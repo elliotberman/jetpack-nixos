@@ -32,13 +32,6 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ autoAddDriverRunpath cuda_nvcc dpkg ];
   buildInputs = [ cuda_cudart cuda_profiler_api cudnn libcublas tensorrt ];
 
-  postPatch = ''
-    substituteInPlace Makefile.config \
-      --replace-fail \
-        '-I"$(CUDNN_INSTALL_DIR)/include"' \
-        '-I"${lib.getOutput "include" cudnn}/include"'
-  '';
-
   enableParallelBuilding = true;
 
   makeFlags = [
