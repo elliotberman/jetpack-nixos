@@ -26,10 +26,11 @@ buildLinux (args // {
 
   defconfig = "defconfig";
 
-  # TODO: how to get Nix not to inject h/w specific configs?
-  # Nix injects some board-specific configs. Those configs depend on things that
-  # qcom_defconfig have disabled and so we get config errors. One solution is to
-  # enable the dependent configs, but why have things enabled we don't need?
+  # https://github.com/NixOS/nixpkgs/pull/366004
+  # introduced a breaking change that if a module is declared but it is not being used it will fail
+  # if you try to suppress each of he errors e.g.
+  # REISERFS_FS_SECURITY = lib.mkForce unset; within structuredExtraConfig
+  # that list runs to a long 100+ modules so we go back to the previous default and ignore them
   ignoreConfigErrors = true;
 
   # disabling the dependency on the common-config would seem appropriate as we define our own defconfig
