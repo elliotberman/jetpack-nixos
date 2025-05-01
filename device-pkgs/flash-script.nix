@@ -55,7 +55,7 @@
   cp ${uefi-firmware}/dtbs/*.dtbo kernel/dtb/
   ''}
   ${lib.optionalString (tosImage != null) ''
-  # cp ${tosImage}/tos.img bootloader/tos-optee_${socType}.img
+  cp ${tosImage}/tos.img bootloader/tos-optee_${socType}.img
   ''}
   ${lib.optionalString (eksFile != null) ''
   cp ${eksFile} bootloader/eks_${socType}.img

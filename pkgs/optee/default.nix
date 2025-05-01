@@ -151,6 +151,15 @@ let
     '');
 
   buildArmTrustedFirmware = lib.makeOverridable ({ socType, ... }:
+    let
+      atf_build_params = {
+        t194 = [ ];
+        t234 = [
+          "BRANCH_PROTECTION=3"
+          "ARM_ARCH_MINOR=3"
+        ];
+      }.${socType};
+    in
     stdenv.mkDerivation {
       pname = "arm-trusted-firmware";
       version = l4tVersion;
@@ -169,7 +178,7 @@ let
         # `warning: /build/source/build/rk3399/release/bl31/bl31.elf has a LOAD segment with RWX permissions`
         # See also: https://developer.trustedfirmware.org/T996
         "LDFLAGS=-no-warn-rwx-segments"
-      ];
+      ] ++ atf_build_params;
 
       enableParallelBuilding = true;
 
