@@ -407,16 +407,16 @@ in
       wantedBy = [ "multi-user.target" ];
       script =
         let
-          exe = lib.getExe pkgs.nvidia-jetpack.nvidia-ctk;
+          ctk = pkgs.nvidia-container-toolkit;
         in
         ''
-          ${exe} cdi generate \
-            --nvidia-ctk-path=${exe} \
-            --driver-root=${pkgs.nvidia-jetpack.containerDeps} \
-            --ldconfig-path ${lib.getExe' pkgs.glibc "ldconfig"} \
-            --dev-root=/ \
-            --mode=csv \
-            --csv.file=${pkgs.nvidia-jetpack.l4tCsv} \
+          ${ctk}/bin/nvidia-ctk cdi generate \
+            --csv.file ${pkgs.nvidia-jetpack.l4tCsv}/devices.csv \
+            --csv.file ${pkgs.nvidia-jetpack.l4tCsv}/drivers.csv \
+            --discovery-mode csv \
+            --driver-root ${pkgs.nvidia-jetpack.containerDeps} \
+            --nvidia-ctk-path ${ctk}/bin/nvidia-ctk \
+            --dev-root / \
             --output="$RUNTIME_DIRECTORY/jetpack-nixos"
         '';
     };
