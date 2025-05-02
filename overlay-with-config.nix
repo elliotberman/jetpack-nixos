@@ -59,7 +59,7 @@ final: prev: (
 
       flashInitrd =
         let
-          modules = [ ]; # [ "qspi_mtd" "spi_tegra210_qspi" "at24" "spi_nor" ];
+          modules = [ "mtdblock" "spi_tegra210_quad" ]; # [ "qspi_mtd" "spi_tegra210_qspi" "at24" "spi_nor" ];
           modulesClosure = prev.makeModulesClosure {
             rootModules = modules;
             kernel = config.system.modulesTree;

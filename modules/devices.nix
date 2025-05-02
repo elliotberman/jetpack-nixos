@@ -194,7 +194,7 @@ in
     (lib.mkIf (cfg.som == "orin-agx") {
       hardware.firmware = lib.optionals
         (config.hardware.bluetooth.enable
-          || config.networking.wireless.enable
+          || config.hardware.wirelessRegulatoryDatabase
           || config.networking.wireless.iwd.enable) [
         # From https://github.com/OE4T/linux-tegra-5.10/blob/20443c6df8b9095e4676b4bf696987279fac30a9/drivers/net/wireless/realtek/rtw88/rtw8822c.c#L4398
         (extractLinuxFirmware "rtw88-firmware" [
