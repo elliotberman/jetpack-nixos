@@ -1,13 +1,11 @@
 # NOTE: All fixups must be at least binary functions to avoid callPackage adding override attributes.
 { lib
 , libcublas
-, patchelf
 , zlib
 ,
 }:
 let
   inherit (lib.attrsets) getLib;
-  inherit (lib.meta) getExe;
 in
 prevAttrs: {
   buildInputs = prevAttrs.buildInputs or [ ] ++ [
@@ -18,15 +16,15 @@ prevAttrs: {
   postFixup =
     prevAttrs.postFixup or ""
     + ''
-      echo "patchelf-ing libcudnn with runtime dependencies"
-      "${getExe patchelf}" "''${!outputLib:?}/lib/libcudnn.so" --add-needed libcudnn_cnn_infer.so
-      "${getExe patchelf}" "''${!outputLib:?}/lib/libcudnn_ops_infer.so" --add-needed libcublas.so --add-needed libcublasLt.so
+      pushd "''${!outputLib:?}/lib" >/dev/null
+      ln -s libcudnn.so.9 libcudnn.so
+      popd >/dev/null
 
-      echo "creating symlinks for header files in include without the _v8 suffix before the file extension"
+      echo "creating symlinks for header files in include without the _v9 suffix before the file extension"
       pushd "''${!outputInclude:?}/include" >/dev/null
       for file in *.h; do
-        echo "symlinking $file to $(basename "$file" "_v8.h").h"
-        ln -s "$file" "$(basename "$file" "_v8.h").h"
+        echo "symlinking $file to $(basename "$file" "_v9.h").h"
+        ln -s "$file" "$(basename "$file" "_v9.h").h"
       done
       unset -v file
       popd >/dev/null

@@ -18,10 +18,10 @@ stdenv.mkDerivation {
   strictDeps = true;
 
   pname = "cudnn-samples";
-  inherit (debs.common.libcudnn8-samples) src version;
+  inherit (debs.common.libcudnn9-samples) src version;
 
   unpackCmd = "dpkg -x $src source";
-  sourceRoot = "source/usr/src/cudnn_samples_v8";
+  sourceRoot = "source/usr/src/cudnn_samples_v9";
 
   nativeBuildInputs = [ autoAddDriverRunpath cuda_nvcc dpkg ];
   buildInputs = [ cudatoolkit cudnn ];
@@ -40,6 +40,8 @@ stdenv.mkDerivation {
 
   # Sample directories which we won't build.
   ignoredSampleDirs = {
+    cmake = 1;
+    common = 1;
     # `mnistCUDNN` requires freeimage which is marked vulnerable in upstream as of 24.05
     mnistCUDNN = 1;
   };

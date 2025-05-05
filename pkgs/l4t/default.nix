@@ -20,8 +20,10 @@
 , makeWrapper
 , bc
 , debs
+, tree
 , l4tVersion
 , cudaPackages
+, cudaDriverVersion
 }:
 let
   # The version currently in nixpkgs 23.11 and master 0.15 is pretty old and
@@ -71,18 +73,29 @@ let
 
       postPatch = ''
         if [[ -d usr ]]; then
-          mv usr/* .
+          mv -v usr/* .
           rmdir usr
         fi
 
         if [[ -d lib/aarch64-linux-gnu ]]; then
-          mv lib/aarch64-linux-gnu/* lib
+          if [[ -n "$(ls lib/aarch64-linux-gnu)" ]] ; then
+            mv -v -t lib lib/aarch64-linux-gnu/*
+          fi
           rm -rf lib/aarch64-linux-gnu
         fi
 
         if [[ -d lib/tegra ]]; then
-          mv lib/tegra/* lib
+          if [[ -n "$(ls lib/tegra)" ]] ; then
+            mv -v -t lib lib/tegra/*
+          fi
           rm -rf lib/tegra
+        fi
+
+        if [[ -d lib/nvidia ]]; then
+          if [[ -n "$(ls lib/nvidia)" ]] ; then
+            mv -v -t lib lib/nvidia/*
+          fi
+          rm -rf lib/nvidia
         fi
 
         ${postPatch}
@@ -120,18 +133,18 @@ let
     postPatch = ''
       # Replace incorrect ICD symlinks
       rm -rf etc
-      mkdir -p share/vulkan/icd.d
-      mv lib/nvidia_icd.json share/vulkan/icd.d/nvidia_icd.json
+      # mkdir -p share/vulkan/icd.d
+      # mv lib/nvidia/nvidia_icd.json share/vulkan/icd.d/nvidia_icd.json
       # Use absolute path in ICD json
-      sed -i -E "s#(libGLX_nvidia)#$out/lib/\\1#" share/vulkan/icd.d/nvidia_icd.json
+      # sed -i -E "s#(libGLX_nvidia)#$out/lib/\\1#" share/vulkan/icd.d/nvidia_icd.json
 
       rm -f share/glvnd/egl_vendor.d/10_nvidia.json
       cp lib/tegra-egl/nvidia.json share/glvnd/egl_vendor.d/10_nvidia.json
       sed -i -E "s#(libEGL_nvidia)#$out/lib/\\1#" share/glvnd/egl_vendor.d/10_nvidia.json
 
-      mv lib/tegra-egl/* lib
-      rm -rf lib/tegra-egl
-      rm -f lib/nvidia.json
+      mv -v lib/tegra-egl/* lib/
+      rm -r lib/tegra-egl
+      rm lib/nvidia.json
 
       # Remove libnvidia-ptxjitcompiler, which is included in l4t-cuda instead
       rm -f lib/libnvidia-ptxjitcompiler.*
@@ -163,10 +176,11 @@ let
     # TODO: Replace this with appendRunpaths which is available in 23.11
     preFixup = ''
       postFixupHooks+=('
-        patchelf --add-rpath ${lib.makeLibraryPath [ libglvnd ]} \
-          $out/lib/libEGL_nvidia.so.0 \
-          $out/lib/libGLX_nvidia.so.0 \
-          $out/lib/libnvidia-vulkan-producer.so
+        # ${lib.getExe tree} $out
+        # patchelf --add-rpath ${lib.makeLibraryPath [ libglvnd ]} \
+        #   $out/lib/libEGL_nvidia.so.0 \
+        #   $out/lib/libGLX_nvidia.so.0 \
+        #   $out/lib/libnvidia-vulkan-producer.so
 
         patchelf --add-rpath ${lib.makeLibraryPath (with xorg; [ libX11 libXext libxcb ])} \
           $out/lib/libGLX_nvidia.so.0 \
@@ -198,9 +212,9 @@ let
         # well as libnvidia-ptxjitcompiler in the same package. meta-tegra does a
         # similar thing where they pull libnvidia-ptxjitcompiler out of
         # l4t-3d-core and place it in the same package as libcuda.
-        dpkg --fsys-tarfile ${debs.t234.nvidia-l4t-3d-core.src} | tar -xO ./usr/lib/aarch64-linux-gnu/tegra/libnvidia-ptxjitcompiler.so.${l4tVersion} > lib/libnvidia-ptxjitcompiler.so.${l4tVersion}
-        ln -sf libnvidia-ptxjitcompiler.so.${l4tVersion} lib/libnvidia-ptxjitcompiler.so.1
-        ln -sf libnvidia-ptxjitcompiler.so.${l4tVersion} lib/libnvidia-ptxjitcompiler.so
+        dpkg --fsys-tarfile ${debs.t234.nvidia-l4t-3d-core.src} | tar -xO ./usr/lib/aarch64-linux-gnu/nvidia/libnvidia-ptxjitcompiler.so.${cudaDriverVersion} > lib/libnvidia-ptxjitcompiler.so.${cudaDriverVersion}
+        ln -sf libnvidia-ptxjitcompiler.so.${cudaDriverVersion} lib/libnvidia-ptxjitcompiler.so.1
+        ln -sf libnvidia-ptxjitcompiler.so.${cudaDriverVersion} lib/libnvidia-ptxjitcompiler.so
       '';
 
     # libcuda.so actually depends on libnvcucompat.so at runtime (probably
@@ -212,14 +226,21 @@ let
 
   l4t-cupva = buildFromDeb {
     name = "cupva";
-    src = debs.common."cupva-2.3-l4t".src;
-    version = debs.common."cupva-2.3-l4t".version;
+    src = debs.common."cupva-2.5-l4t".src;
+    version = debs.common."cupva-2.5-l4t".version;
     buildInputs = [ stdenv.cc.cc.lib l4t-cuda l4t-nvsci l4t-pva ];
     postPatch = ''
       mkdir -p lib
-      mv opt/nvidia/cupva-2.3/lib/aarch64-linux-gnu/* lib/
+      mv opt/nvidia/cupva-2.5/lib/aarch64-linux-gnu/* lib/
       rm -rf opt
     '';
+  };
+
+  l4t-dla-compiler = buildFromDeb {
+    name = "nvidia-l4t-dla-compiler";
+    src = debs.common."nvidia-l4t-dla-compiler".src;
+    version = debs.common."nvidia-l4t-dla-compiler".version;
+    buildInputs = [ l4t-cuda ];
   };
 
   # TODO: Make nvwifibt systemd scripts work
@@ -282,8 +303,8 @@ let
 
     patches = [
       (fetchpatch {
-        url = "https://raw.githubusercontent.com/OE4T/meta-tegra/af0a93313c13e9eac4e80082d8a8e8ac5f7ad6e8/recipes-multimedia/argus/files/0005-Remove-DO-NOT-USE-declarations-from-v4l2_nv_extensio.patch";
-        sha256 = "sha256-meHF7uS2TFMoh0qGCmjGzR8hfhE0cCwSP2T3ufzwM0s=";
+        url = "https://raw.githubusercontent.com/OE4T/meta-tegra/2b51abd5b3e2436f8eeb98e8f985806521379174/recipes-multimedia/argus/files/0001-Remove-DO-NOT-USE-declarations-from-v4l2_nv_extensio.patch";
+        sha256 = "sha256-MvrwedGEuGtORhshGzJ76A9/VPPCyp9Ztrh0x13T+pw=";
         stripLen = 1;
         extraPrefix = "usr/src/jetson_multimedia_api/";
       })
@@ -372,9 +393,8 @@ let
     nativeBuildInputs = [ makeWrapper ];
     buildInputs = [ stdenv.cc.cc.lib l4t-core ];
     postPatch = ''
-      # Remove a utility that bring in too many libraries
-      rm bin/nv_macsec_wpa_supplicant
-
+      rm sbin/nv_wpa_supplicant_wifi sbin/wpa_supplicant
+      
       # This just contains a symlink to a binary already in /bin (nvcapture-status-decoder)
       rm -rf opt
     '';
@@ -405,6 +425,7 @@ in
     l4t-core
     l4t-cuda
     l4t-cupva
+    l4t-dla-compiler
     l4t-firmware
     l4t-gbm
     l4t-gstreamer

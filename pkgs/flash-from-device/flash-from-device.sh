@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+set -x
+
 source @ota_helpers_func@
 
 signed_images=$1

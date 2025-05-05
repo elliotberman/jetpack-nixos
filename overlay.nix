@@ -18,10 +18,11 @@ let
     versions
     ;
 
-  jetpackVersion = "5.1.5";
-  l4tVersion = "35.6.1";
-  cudaMajorMinorPatchVersion = "11.4.298";
+  jetpackVersion = "6.2";
+  l4tVersion = "36.4.3";
+  cudaMajorMinorPatchVersion = "12.6.10";
   cudaVersion = versions.majorMinor cudaMajorMinorPatchVersion;
+  cudaDriverVersion = "540.4.0";
 
   sourceInfo = import ./sourceinfo {
     inherit l4tVersion;
@@ -31,7 +32,7 @@ in
 {
   nvidia-jetpack = makeScope final.newScope (self: {
     inherit (sourceInfo) debs gitRepos;
-    inherit jetpackVersion l4tVersion cudaVersion;
+    inherit jetpackVersion l4tVersion cudaVersion cudaDriverVersion;
 
     callPackages = callPackagesWith (final // self);
 
@@ -40,13 +41,9 @@ in
         # https://developer.nvidia.com/embedded/jetson-linux-archive
         # https://repo.download.nvidia.com/jetson/
         src = final.fetchurl {
-          url = "https://developer.download.nvidia.com/embedded/L4T/r${versions.major l4tVersion}_Release_v${versions.minor l4tVersion}.${versions.patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
-          hash = "sha256-nqKEd3R7MJXuec3Q4odDJ9SNTUD1FyluWg/SeeptbUE=";
+          url = with final.lib.versions; "https://developer.download.nvidia.com/embedded/L4T/r${major l4tVersion}_Release_v${minor l4tVersion}.${patch l4tVersion}/release/Jetson_Linux_R${l4tVersion}_aarch64.tbz2";
+          hash = "sha256-lJpEBJxM5qjv31cuoIIMh09u5dQco+STW58OONEYc9I=";
         };
-        # We use a more recent version of bzip2 here because we hit this bug
-        # extracting nvidia's archives:
-        # https://bugs.launchpad.net/ubuntu/+source/bzip2/+bug/1834494
-        nativeBuildInputs = [ final.buildPackages.bzip2_1_1 ];
       } ''
       bzip2 -d -c $src | tar xf -
       mv Linux_for_Tegra $out
@@ -76,7 +73,7 @@ in
     );
 
     inherit (final.callPackages ./pkgs/uefi-firmware { inherit (self) l4tVersion; })
-      edk2-jetson uefi-firmware;
+      edk2-jetson uefi-firmware jetson-edk2-uefi;
 
     inherit (final.callPackages ./pkgs/optee {
       # Nvidia's recommended toolchain is gcc9:
@@ -132,7 +129,7 @@ in
     tests = final.callPackages ./pkgs/tests { inherit l4tVersion; };
 
     kernelPackagesOverlay = final: _: {
-      nvidia-display-driver = final.callPackage ./kernel/display-driver.nix { inherit (self) gitRepos l4tVersion; };
+      nvidia-oot-modules = final.callPackage ./kernel/oot-modules.nix { inherit (self) bspSrc gitRepos l4tVersion; };
     };
 
     kernel = self.callPackage ./kernel { kernelPatches = [ ]; };
@@ -140,6 +137,8 @@ in
 
     rtkernel = self.callPackage ./kernel { kernelPatches = [ ]; realtime = true; };
     rtkernelPackages = (final.linuxPackagesFor self.rtkernel).extend self.kernelPackagesOverlay;
+
+    devicetree = self.callPackage ./kernel/devicetree.nix { };
 
     nxJetsonBenchmarks = self.callPackage ./pkgs/jetson-benchmarks {
       targetSom = "nx";
@@ -170,6 +169,6 @@ in
   # attribute set, we cannot use self.callPackages because we would end up with infinite recursion.
   # Instead, we must either use final.callPackages or packagesFromDirectoryRecursive.
   // final.callPackages ./pkgs/l4t {
-    inherit (self) debs l4tVersion;
+    inherit (self) debs l4tVersion cudaDriverVersion;
   });
 }

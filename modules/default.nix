@@ -182,32 +182,51 @@ in
       }
     ];
 
-    # Use mkOptionDefault so that we prevent conflicting with the priority that
-    # `nixos-generate-config` uses.
-    nixpkgs.hostPlatform = lib.mkOptionDefault "aarch64-linux";
-
     # Use mkBefore to ensure that our overlays get merged prior to any
     # downstream jetpack-nixos users. This should prevent a situation where a
     # user's overlay is merged before ours and that overlay depends on
     # something defined in our overlay.
-    nixpkgs.overlays = lib.mkBefore [
-      (import ../overlay.nix)
-      (import ../overlay-with-config.nix config)
-    ];
+    nixpkgs = lib.mkMerge [
+      {
+        overlays = lib.mkBefore [
+          (import ../overlay.nix)
+          (import ../overlay-with-config.nix config)
+        ];
 
-    # Advertise support for CUDA.
-    nixpkgs.config = mkIf cfg.configureCuda {
-      cudaSupport = lib.mkDefault true;
-      cudaCapabilities =
-        let
-          isGeneric = cfg.som == "generic";
-          isXavier = lib.hasPrefix "xavier-" cfg.som;
-          isOrin = lib.hasPrefix "orin-" cfg.som;
-        in
-        lib.mkDefault
-          (lib.optionals (isXavier || isGeneric) [ "7.2" ]
-            ++ lib.optionals (isOrin || isGeneric) [ "8.7" ]);
-    };
+        # Use mkOptionDefault so that we prevent conflicting with the priority that
+        # `nixos-generate-config` uses.
+        hostPlatform = lib.mkOptionDefault "aarch64-linux";
+
+      }
+      (lib.mkIf cfg.configureCuda {
+        # Advertise support for CUDA.
+        config = {
+          cudaSupport = lib.mkDefault true;
+          cudaCapabilities =
+            let
+              isGeneric = cfg.som == "generic";
+              isXavier = lib.hasPrefix "xavier-" cfg.som;
+              isOrin = lib.hasPrefix "orin-" cfg.som;
+            in
+            lib.mkDefault
+              (lib.optionals (isXavier || isGeneric) [ "7.2" ]
+                ++ lib.optionals (isOrin || isGeneric) [ "8.7" ]);
+        };
+
+        overlays = lib.mkBefore [
+          (final: prev: {
+            # NOTE: samples (and other packages) may pull in dependencies which depend on CUDA (either directly or
+            # transitively) -- this is problematic for us, because the default CUDA package set is not the one we
+            # construct.
+            # To avoid mixed package sets, we make our CUDA package set the default.
+            inherit (final.nvidia-jetpack) cudaPackages;
+            # TODO: Remove after bumping past 24.11: reset OpenCV's override on cudaPackages.
+            # https://github.com/NixOS/nixpkgs/blob/7ffe0edc685f14b8c635e3d6591b0bbb97365e6c/pkgs/top-level/all-packages.nix#L10540-L10541
+            opencv4 = prev.opencv4.override { inherit (final) cudaPackages; };
+          })
+        ];
+      })
+    ];
 
     boot.kernelPackages =
       if cfg.kernel.realtime then
@@ -226,7 +245,17 @@ in
     ++ lib.optional (lib.hasPrefix "xavier-" cfg.som || cfg.som == "generic") "video=efifb:off"; # Disable efifb driver, which crashes Xavier NX and possibly AGX
 
     boot.initrd.includeDefaultModules = false; # Avoid a bunch of modules we may not get from tegra_defconfig
-    boot.initrd.availableKernelModules = [ "xhci-tegra" ]; # Make sure USB firmware makes it into initrd
+    boot.initrd.availableKernelModules = [
+      # Make sure USB driver stack makes it into initrd
+      "phy-tegra-xusb"
+      "tegra_mce"
+      "xhci-tegra"
+      # for type-c connector
+      "i2c-tegra"
+      "fusb301"
+      "typec_ucsi"
+      "ucsi_ccg"
+    ];
 
     boot.kernelModules =
       [ "nvgpu" ]
@@ -240,17 +269,12 @@ in
       options nvidia-drm modeset=1
     '';
 
-    # For Orin. Unsupported with PREEMPT_RT.
-    boot.extraModulePackages = lib.optional
-      (
-        !cfg.kernel.realtime
-      )
-      config.boot.kernelPackages.nvidia-display-driver;
+    boot.extraModulePackages = [ config.boot.kernelPackages.nvidia-oot-modules ];
 
     hardware.firmware = with pkgs.nvidia-jetpack; [
       l4t-firmware
       l4t-xusb-firmware # usb firmware also present in linux-firmware package, but that package is huge and has much more than needed
-      cudaPackages.vpi2-firmware # Optional, but needed for pva_auth_allowlist firmware file used by VPI2
+      cudaPackages.vpi3-firmware # Optional, but needed for pva_auth_allowlist firmware file used by vpi3
     ];
 
     hardware.deviceTree.enable = true;
@@ -383,16 +407,16 @@ in
       wantedBy = [ "multi-user.target" ];
       script =
         let
-          exe = lib.getExe pkgs.nvidia-jetpack.nvidia-ctk;
+          ctk = pkgs.nvidia-container-toolkit;
         in
         ''
-          ${exe} cdi generate \
-            --nvidia-ctk-path=${exe} \
-            --driver-root=${pkgs.nvidia-jetpack.containerDeps} \
-            --ldconfig-path ${lib.getExe' pkgs.glibc "ldconfig"} \
-            --dev-root=/ \
-            --mode=csv \
-            --csv.file=${pkgs.nvidia-jetpack.l4tCsv} \
+          ${ctk}/bin/nvidia-ctk cdi generate \
+            --csv.file ${pkgs.nvidia-jetpack.l4tCsv}/devices.csv \
+            --csv.file ${pkgs.nvidia-jetpack.l4tCsv}/drivers.csv \
+            --discovery-mode csv \
+            --driver-root ${pkgs.nvidia-jetpack.containerDeps} \
+            --nvidia-ctk-path ${ctk}/bin/nvidia-ctk \
+            --dev-root / \
             --output="$RUNTIME_DIRECTORY/jetpack-nixos"
         '';
     };

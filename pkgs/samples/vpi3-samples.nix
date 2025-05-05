@@ -9,21 +9,21 @@ let
   inherit (cudaPackages)
     cuda_cudart
     cuda_nvcc
-    vpi2
+    vpi3
     ;
 in
 stdenv.mkDerivation {
   __structuredAttrs = true;
   strictDeps = true;
 
-  pname = "vpi2-samples";
-  inherit (debs.common.vpi2-samples) src version;
+  pname = "vpi3-samples";
+  inherit (debs.common.vpi3-samples) src version;
 
   unpackCmd = "dpkg -x $src source";
-  sourceRoot = "source/opt/nvidia/vpi2/samples";
+  sourceRoot = "source/opt/nvidia/vpi3/samples";
 
   nativeBuildInputs = [ cmake cuda_nvcc dpkg ];
-  buildInputs = [ cuda_cudart opencv vpi2 ];
+  buildInputs = [ cuda_cudart opencv vpi3 ];
 
   configurePhase = ''
     runHook preBuild

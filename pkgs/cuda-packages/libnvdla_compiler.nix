@@ -1,10 +1,10 @@
 { deb-builder }:
 deb-builder {
-  sourceName = "libcusparse";
+  sourceName = "nvidia-l4t-dla-compiler";
+  packageName = "libnvdla_compiler";
   outputs = [
     "out"
     "dev"
-    "doc"
     "include"
     "lib"
     "static"
@@ -12,6 +12,6 @@ deb-builder {
   ];
   releaseInfo = {
     license = "CUDA Toolkit";
-    name = "CUDA cuSPARSE";
+    name = "libnvdla_compiler";
   };
 }

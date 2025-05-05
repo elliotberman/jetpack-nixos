@@ -1,15 +1,17 @@
 { deb-builder }:
 deb-builder {
-  sourceName = "cuda-cccl";
-  packageName = "cuda_cccl";
+  sourceName = "libnvjpeg";
+  packageName = "libnvjpeg";
   outputs = [
     "out"
     "dev"
-    "doc"
     "include"
+    "lib"
+    "static"
+    "stubs"
   ];
   releaseInfo = {
     license = "CUDA Toolkit";
-    name = "CXX Core Compute Libraries";
+    name = "libnvjpeg";
   };
 }

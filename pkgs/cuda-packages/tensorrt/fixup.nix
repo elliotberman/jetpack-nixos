@@ -6,6 +6,7 @@
 , flags
 , libcublas
 , libcudla
+, l4t-dla-compiler
 , patchelf
 }:
 prevAttrs: {
@@ -20,6 +21,7 @@ prevAttrs: {
     cudnn
     libcublas
     libcudla
+    l4t-dla-compiler
   ];
 
   debNormalization =

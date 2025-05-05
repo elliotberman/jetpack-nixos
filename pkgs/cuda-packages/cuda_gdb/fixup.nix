@@ -4,6 +4,7 @@
 , lib
 , python3
 , stdenv
+, gmp
 }:
 let
   inherit (lib.attrsets) recursiveUpdate;
@@ -17,21 +18,22 @@ prevAttrs: {
 
   buildInputs =
     prevAttrs.buildInputs or [ ]
+    ++ [ gmp ]
     # aarch64, sbsa needs expat
     ++ optionals stdenv.hostPlatform.isAarch64 [ expat ];
 
-  # TODO(@connorbaker): What does CUDA 11.x provide in terms of Python binaries?
-  postInstall =
-    prevAttrs.postInstall or ""
-    # Remove binaries requiring Python3 versions we do not have
-    + optionalString (cudaAtLeast "12.5") ''
-      pushd "''${!outputBin:?}/bin" >/dev/null
-      echo "removing cuda-gdb-python*-tui binaries for Python 3 versions we do not have"
-      mv "cuda-gdb-python${python3MajorMinorVersion}-tui" ../
-      rm -f cuda-gdb-python*-tui
-      mv "../cuda-gdb-python${python3MajorMinorVersion}-tui" . 
-      popd >/dev/null
-    '';
+  # # TODO(@connorbaker): What does CUDA 11.x provide in terms of Python binaries?
+  # postInstall =
+  #   prevAttrs.postInstall or ""
+  #   # Remove binaries requiring Python3 versions we do not have
+  #   + optionalString (cudaAtLeast "12.5") ''
+  #     pushd "''${!outputBin:?}/bin" >/dev/null
+  #     echo "removing cuda-gdb-python*-tui binaries for Python 3 versions we do not have"
+  #     mv "cuda-gdb-python${python3MajorMinorVersion}-tui" ../
+  #     rm -f cuda-gdb-python*-tui
+  #     mv "../cuda-gdb-python${python3MajorMinorVersion}-tui" . 
+  #     popd >/dev/null
+  #   '';
 
   passthru = recursiveUpdate (prevAttrs.passthru or { }) {
     brokenConditions = {

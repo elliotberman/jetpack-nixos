@@ -1,15 +1,18 @@
 { deb-builder }:
 deb-builder {
-  sourceName = "cuda-cccl";
-  packageName = "cuda_cccl";
+  sourceName = "libcusparse";
+  fixupFns = [ ./fixup.nix ];
   outputs = [
     "out"
     "dev"
     "doc"
     "include"
+    "lib"
+    "static"
+    "stubs"
   ];
   releaseInfo = {
     license = "CUDA Toolkit";
-    name = "CXX Core Compute Libraries";
+    name = "CUDA cuSPARSE";
   };
 }
