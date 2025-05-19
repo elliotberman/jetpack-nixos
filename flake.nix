@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
   };
 
   outputs = { self, nixpkgs, ... }:
@@ -18,9 +18,8 @@
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
           self.nixosModules.default
         ];
-        # Avoids a bunch of extra modules we don't have in the tegra_defconfig, like "ata_piix",
-        disabledModules = [ "profiles/all-hardware.nix" ];
 
+        hardware.enableAllHardware = lib.mkForce false;
         hardware.nvidia-jetpack.enable = true;
       };
       aarch64_config = {
