@@ -23,7 +23,7 @@ stdenvNoCC.mkDerivation {
     in
     if l4tMajorVersion == "35" then
       [ "l4t.csv" ]
-    else if l4tMajorVersion == "36" then
+    else if lib.elem l4tMajorVersion [ "36" "38" ] then
       [
         "devices.csv"
         "drivers.csv"
