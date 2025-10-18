@@ -536,7 +536,7 @@ in
           enable = true;
           description = "Create a symlink for libEGL_nvidia.so.0 at /usr/lib/aarch64-linux-gnu/tegra-egl/";
           unitConfig = {
-            ConditionPathExists = "!/usr/lib/aarch64-linux-gnu/tegra-egl/libEGL_nvidia.so.0";
+            ConditionPathIsSymbolicLink = [ "!/usr/lib/aarch64-linux-gnu/tegra-egl/libEGL_nvidia.so.0" "/run/opengl-driver" ];
           };
           serviceConfig = {
             type = "oneshot";
