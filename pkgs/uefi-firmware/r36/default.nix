@@ -142,7 +142,7 @@ let
       rev = "r${l4tMajorMinorPatchVersion}";
       sha256 = "sha256-eTX+/B6TtpYyeoeQxJcoN2eS+Mh4DtLthabW7p7jzYQ=";
     };
-    patches = edk2NvidiaPatches ++ [
+    patches = [
       ###### git log r36.4.3-updates ^r36.4.3 (kept these even in 36.4.4) ######
       (fetchpatch {
         # fix: Leave DisplayHandoff enabled on ACPI boot
@@ -173,11 +173,18 @@ let
         hash = "sha256-cc+eGLFHZ6JQQix1VWe/UOkGunAzPb8jM9SXa9ScIn8=";
       })
 
+      # feat: Add Aquantia AQR113 PHY ID
+      (fetchpatch {
+        url = "https://github.com/NVIDIA/edk2-nvidia/commit/772fecc942cd9e75260875d8cffa74367b7349ef.patch";
+        sha256 = "sha256-LxwLx6SW9XUJOm/DpdyfenWG/4Oec6/Dgu/ZLviFNvk=";
+      })
+
       ./stuart-passthru-compiler-prefix.diff
       ./repeatability.diff
+      ./add-extra-oui-for-mgbe-phy.diff
     ] ++ lib.optionals (trustedPublicCertPemFile != null) [
       ./capsule-authentication.diff
-    ];
+    ] ++ edk2NvidiaPatches;
     postPatch = lib.optionalString errorLevelInfo ''
       sed -i 's#PcdDebugPrintErrorLevel|.*#PcdDebugPrintErrorLevel|0x8000004F#' Platform/NVIDIA/NVIDIA.common.dsc.inc
     '' + lib.optionalString (bootLogo != null) ''

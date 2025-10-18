@@ -86,7 +86,7 @@ let
       rev = "r${l4tMajorMinorPatchVersion}";
       sha256 = "sha256-q0SxS6mRJpD0t+TPvf4Sp+n+VBx/5PeqWXC2mgUJQ98=";
     };
-    patches = edk2NvidiaPatches ++ [
+    patches = [
       # Fix Eqos driver to use correct TX clock name
       # PR: https://github.com/NVIDIA/edk2-nvidia/pull/76
       (fetchpatch {
@@ -115,7 +115,15 @@ let
         url = "https://github.com/NVIDIA/edk2-nvidia/commit/c101ba515b2737fb78d8929c2852f5c8f9607330.patch";
         sha256 = "sha256-M+9y5lmUoUrc985MDuZzHIa2EySqoPWzRu2QSTc0Q1A=";
       })
-    ];
+
+      # feat: Add Aquantia AQR113 PHY ID
+      (fetchpatch {
+        url = "https://github.com/NVIDIA/edk2-nvidia/commit/772fecc942cd9e75260875d8cffa74367b7349ef.patch";
+        sha256 = "sha256-LxwLx6SW9XUJOm/DpdyfenWG/4Oec6/Dgu/ZLviFNvk=";
+      })
+
+      ./add-extra-oui-for-mgbe-phy.diff
+    ] ++ edk2NvidiaPatches;
     postPatch = lib.optionalString errorLevelInfo ''
       sed -i 's#PcdDebugPrintErrorLevel|.*#PcdDebugPrintErrorLevel|0x8000004F#' Platform/NVIDIA/NVIDIA.common.dsc.inc
     '' + lib.optionalString (bootLogo != null) ''
