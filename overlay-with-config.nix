@@ -54,10 +54,13 @@ final: prev: (
 
       uefi-firmware = prevJetpack.uefi-firmware.override ({
         bootLogo = cfg.firmware.uefi.logo;
-        debugMode = cfg.firmware.uefi.debugMode;
-        errorLevelInfo = cfg.firmware.uefi.errorLevelInfo;
-        edk2NvidiaPatches = cfg.firmware.uefi.edk2NvidiaPatches;
-        edk2UefiPatches = cfg.firmware.uefi.edk2UefiPatches;
+        inherit (cfg.firmware.uefi)
+          debugMode
+          errorLevelInfo
+          printErrorLevel
+          edk2NvidiaPatches
+          edk2UefiPatches
+          ;
         inherit (finalJetpack) socFamily;
 
         # A hash of something that represents everything that goes into the
@@ -89,10 +92,13 @@ final: prev: (
       });
 
       jetsonStandaloneMMOptee = prevJetpack.jetsonStandaloneMMOptee.override {
-        debugMode = cfg.firmware.uefi.debugMode;
-        errorLevelInfo = cfg.firmware.uefi.errorLevelInfo;
-        edk2NvidiaPatches = cfg.firmware.uefi.edk2NvidiaPatches;
-        edk2UefiPatches = cfg.firmware.uefi.edk2UefiPatches;
+        inherit (cfg.firmware.uefi)
+          debugMode
+          errorLevelInfo
+          printErrorLevel
+          edk2NvidiaPatches
+          edk2UefiPatches
+          ;
         inherit (finalJetpack) socFamily;
       };
 

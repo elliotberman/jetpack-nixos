@@ -50,6 +50,12 @@ in
             default = cfg.firmware.uefi.debugMode;
           };
 
+          printErrorLevel = mkOption {
+            type = types.nullOr types.str;
+            default = if cfg.firmware.uefi.errorLevelInfo then "0x8000004F" else null;
+            defaultText = "if config.hardware.nvidia-jetpack.firmware.uefi.errorLevelInfo then \"0x8000004F\" else null";
+          };
+
           edk2NvidiaPatches = mkOption {
             type = types.listOf types.path;
             description = ''
